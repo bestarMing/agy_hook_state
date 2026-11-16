@@ -1,0 +1,6 @@
+# Re-include agent configuration excluded by the global gitignore.
+# Tracked in-repo so the engineering skills keep working after a fresh clone.
+!AGENTS.md
+!docs/
+!docs/specs/
+!GLOSSARY.md
