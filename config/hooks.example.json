@@ -1,0 +1,6 @@
+{
+  "SessionStart": [{ "hooks": [{ "type": "command", "command": "python -m agy_metrics.hook_command", "timeout": 30 }] }],
+  "PreInvocation": [{ "hooks": [{ "type": "command", "command": "python -m agy_metrics.hook_command", "timeout": 30 }] }],
+  "PostInvocation": [{ "hooks": [{ "type": "command", "command": "python -m agy_metrics.hook_command", "timeout": 30 }] }],
+  "Stop": [{ "hooks": [{ "type": "command", "command": "python -m agy_metrics.hook_command", "timeout": 30 }] }]
+}
