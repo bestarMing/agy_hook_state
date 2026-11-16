@@ -27,8 +27,8 @@ def main() -> int:
         sp = storage.summary_path(root)
         if sp.exists():
             sys.stdout.write(sp.read_text(encoding="utf-8"))
-    except (ValueError, OSError):
-        pass
+    except Exception:
+        pass  # fail-open: never break the CLI
     return 0
 
 

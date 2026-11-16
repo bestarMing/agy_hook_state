@@ -18,7 +18,7 @@ def main() -> int:
     try:
         event = json.loads(sys.stdin.read())
         core.handle_event(event, _base_dir(), SystemClock())
-    except (ValueError, OSError):
+    except Exception:
         pass  # fail-open: never break the CLI
     print("{}")
     return 0

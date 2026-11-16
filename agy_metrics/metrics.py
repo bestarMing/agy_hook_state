@@ -13,6 +13,7 @@ def is_terminal_stop(event: dict) -> bool:
     return (
         event.get("event") == "Stop"
         and event.get("continuation_active") is False
+        and event.get("decision") != "continue"
     )
 
 
@@ -56,17 +57,21 @@ def compute_turn(
 
     if baseline_tokens and end_tokens:
         out_delta = end_tokens.get("total_output_tokens", 0) - baseline_tokens.get("total_output_tokens", 0)
-        in_delta = end_tokens.get("total_input_tokens", 0) - baseline_tokens.get("total_input_tokens", 0)
         if out_delta < 0:
             out_delta = None
-        if in_delta < 0:
-            in_delta = None
     else:
         out_delta = None
-        in_delta = None
+
+    # Input Token Count is the bridge snapshot read at Stop time, not a
+    # between-turn delta; it is reported separately from output throughput.
+    snapshot_in = end_tokens.get("total_input_tokens") if end_tokens else None
+    input_tokens: int | None | str
+    if snapshot_in is None or snapshot_in < 0:
+        input_tokens = UNKNOWN
+    else:
+        input_tokens = snapshot_in
 
     output_tokens: int | None | str = out_delta if out_delta is not None else UNKNOWN
-    input_tokens: int | None | str = in_delta if in_delta is not None else UNKNOWN
 
     if isinstance(output_tokens, int) and active > 0:
         throughput: float | None | str = round(output_tokens / (active / 1000), 1)

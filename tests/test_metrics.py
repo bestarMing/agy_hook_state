@@ -16,6 +16,12 @@ class TestMetrics(unittest.TestCase):
         self.assertTrue(metrics.is_terminal_stop({"event": "Stop", "continuation_active": False}))
         self.assertFalse(metrics.is_terminal_stop({"event": "Stop", "continuation_active": True}))
         self.assertFalse(metrics.is_terminal_stop({"event": "PreInvocation"}))
+        self.assertFalse(metrics.is_terminal_stop({
+            "event": "Stop", "continuation_active": False, "decision": "continue",
+        }))
+        self.assertTrue(metrics.is_terminal_stop({
+            "event": "Stop", "continuation_active": False, "decision": "end_turn",
+        }))
 
     def test_pair_invocations_and_active_time(self):
         events = [
@@ -48,6 +54,37 @@ class TestMetrics(unittest.TestCase):
         self.assertEqual(rec["ttftMs"], UNKNOWN)
         self.assertEqual(rec["completeness"], "full")
         self.assertEqual(rec["crossCheck"]["deltaMs"], 50)
+
+    def test_compute_turn_input_tokens_is_snapshot(self):
+        events = [
+            ev("PreInvocation", invocationNum=0, wallClockMs=100),
+            ev("PostInvocation", invocationNum=0, wallClockMs=300),
+            ev("Stop", continuation_active=False, decision="end_turn", wallClockMs=500),
+        ]
+        rec = metrics.compute_turn(
+            "conv-1", 1, "m", events,
+            {"total_output_tokens": 100, "total_input_tokens": 1890},
+            {"total_output_tokens": 412, "total_input_tokens": 3000},
+            transcript_start_ms=None,
+        )
+        self.assertEqual(rec["inputTokens"], 3000)  # snapshot, not the 1110 delta
+        self.assertEqual(rec["outputTokens"], 312)  # output stays a delta
+
+    def test_compute_turn_input_tokens_unknown_semantics(self):
+        events = [
+            ev("PreInvocation", invocationNum=0, wallClockMs=100),
+            ev("Stop", continuation_active=False, decision="end_turn", wallClockMs=500),
+        ]
+        baseline = {"total_output_tokens": 100, "total_input_tokens": 100}
+        missing = metrics.compute_turn(
+            "c", 1, "m", events, baseline, {"total_output_tokens": 110}, None)
+        negative = metrics.compute_turn(
+            "c", 1, "m", events, baseline,
+            {"total_output_tokens": 110, "total_input_tokens": -1}, None)
+        absent = metrics.compute_turn("c", 1, "m", events, baseline, None, None)
+        self.assertEqual(missing["inputTokens"], UNKNOWN)
+        self.assertEqual(negative["inputTokens"], UNKNOWN)
+        self.assertEqual(absent["inputTokens"], UNKNOWN)
 
     def test_compute_turn_missing_tokens_is_partial(self):
         events = [
