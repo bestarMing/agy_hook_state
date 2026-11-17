@@ -9,6 +9,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+HOOK_NAME = "agy-metrics"
 HOOK_EVENTS = ("SessionStart", "PreInvocation", "PostInvocation", "Stop")
 LAUNCHER_NAME = "agy_metrics_launcher.py"
 
@@ -45,23 +46,43 @@ def _write_json(path: Path, data: dict) -> None:
 
 def merge_hooks(existing: dict, command: str, timeout: int) -> dict:
     result = copy.deepcopy(existing)
+    bundle = result.setdefault(HOOK_NAME, {})
+    if not isinstance(bundle, dict):
+        bundle = result[HOOK_NAME] = {}
     new_hook = {"type": "command", "command": command, "timeout": timeout}
     for event in HOOK_EVENTS:
-        groups = result.setdefault(event, [])
-        if not isinstance(groups, list):
-            groups = result[event] = []
+        handlers = bundle.setdefault(event, [])
+        if not isinstance(handlers, list):
+            handlers = bundle[event] = []
         if any(
-            h.get("command") == command
-            for g in groups
-            if isinstance(g, dict)
-            for h in g.get("hooks", [])
-            if isinstance(h, dict)
+            isinstance(h, dict) and h.get("command") == command
+            for h in handlers
         ):
             continue
-        if groups and isinstance(groups[0], dict) and "hooks" in groups[0]:
-            groups[0]["hooks"].append(dict(new_hook))
-        else:
-            groups.append({"hooks": [dict(new_hook)]})
+        handlers.append(dict(new_hook))
+
+    # Clean up any legacy un-namespaced hooks added by older installer versions
+    for event in HOOK_EVENTS:
+        if event in result and isinstance(result[event], list):
+            cleaned = []
+            for item in result[event]:
+                if isinstance(item, dict) and "hooks" in item:
+                    sub = [
+                        h for h in item.get("hooks", [])
+                        if not (isinstance(h, dict) and (h.get("command") == command or "agy_metrics_launcher.py" in h.get("command", "")))
+                    ]
+                    if sub:
+                        item_copy = dict(item)
+                        item_copy["hooks"] = sub
+                        cleaned.append(item_copy)
+                elif isinstance(item, dict):
+                    if not (item.get("command") == command or "agy_metrics_launcher.py" in item.get("command", "")):
+                        cleaned.append(item)
+            if cleaned:
+                result[event] = cleaned
+            else:
+                del result[event]
+
     return result
 
 

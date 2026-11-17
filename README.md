@@ -65,10 +65,12 @@ python -m agy_metrics.install
 
 ```json
 {
-  "SessionStart":   [{ "hooks": [{ "type": "command", "command": "<python> <launcher> hook", "timeout": 30 }] }],
-  "PreInvocation":  [{ "hooks": [{ "type": "command", "command": "<python> <launcher> hook", "timeout": 30 }] }],
-  "PostInvocation": [{ "hooks": [{ "type": "command", "command": "<python> <launcher> hook", "timeout": 30 }] }],
-  "Stop":           [{ "hooks": [{ "type": "command", "command": "<python> <launcher> hook", "timeout": 30 }] }]
+  "agy-metrics": {
+    "SessionStart":   [{ "type": "command", "command": "<python> <launcher> hook", "timeout": 30 }],
+    "PreInvocation":  [{ "type": "command", "command": "<python> <launcher> hook", "timeout": 30 }],
+    "PostInvocation": [{ "type": "command", "command": "<python> <launcher> hook", "timeout": 30 }],
+    "Stop":           [{ "type": "command", "command": "<python> <launcher> hook", "timeout": 30 }]
+  }
 }
 ```
 

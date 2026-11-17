@@ -10,13 +10,15 @@ from agy_metrics import install as installer
 
 
 HOOK_EVENTS = ("SessionStart", "PreInvocation", "PostInvocation", "Stop")
+HOOK_NAME = installer.HOOK_NAME
 
 
 class TestMergeConfig(unittest.TestCase):
     def test_merge_hooks_adds_four_events_idempotently(self):
         merged = installer.merge_hooks({}, "CMD", 30)
+        self.assertIn(HOOK_NAME, merged)
         for event in HOOK_EVENTS:
-            hooks = merged[event][0]["hooks"]
+            hooks = merged[HOOK_NAME][event]
             self.assertEqual(len(hooks), 1)
             self.assertEqual(hooks[0]["command"], "CMD")
             self.assertEqual(hooks[0]["timeout"], 30)
@@ -24,18 +26,28 @@ class TestMergeConfig(unittest.TestCase):
 
         merged_again = installer.merge_hooks(merged, "CMD", 30)
         for event in HOOK_EVENTS:
-            self.assertEqual(len(merged_again[event][0]["hooks"]), 1)
+            self.assertEqual(len(merged_again[HOOK_NAME][event]), 1)
 
     def test_merge_hooks_preserves_unrelated_events_and_hooks(self):
         existing = {
-            "PreToolUse": [{"hooks": [{"type": "command", "command": "mine"}]}],
-            "Stop": [{"hooks": [{"type": "command", "command": "keep-me"}]}],
+            "other-hook": {
+                "PreToolUse": [{"matcher": "*", "hooks": [{"type": "command", "command": "mine"}]}],
+                "Stop": [{"type": "command", "command": "keep-me"}],
+            }
         }
         merged = installer.merge_hooks(existing, "CMD", 30)
-        self.assertEqual(merged["PreToolUse"], existing["PreToolUse"])
-        cmds = [h["command"] for h in merged["Stop"][0]["hooks"]]
-        self.assertIn("keep-me", cmds)
+        self.assertEqual(merged["other-hook"], existing["other-hook"])
+        self.assertIn(HOOK_NAME, merged)
+        cmds = [h["command"] for h in merged[HOOK_NAME]["Stop"]]
         self.assertIn("CMD", cmds)
+
+    def test_merge_hooks_cleans_legacy_unnamespaced_entries(self):
+        legacy = {
+            "Stop": [{"hooks": [{"type": "command", "command": "python path/to/agy_metrics_launcher.py hook"}]}]
+        }
+        merged = installer.merge_hooks(legacy, "CMD", 30)
+        self.assertNotIn("Stop", merged)
+        self.assertIn(HOOK_NAME, merged)
 
     def test_merge_settings_replaces_statusline_but_preserves_other_keys(self):
         merged = installer.merge_settings(
@@ -65,8 +77,9 @@ class TestInstall(unittest.TestCase):
         self.assertIn("statusline", source)
 
         hooks = json.loads((self.home / ".gemini/config/hooks.json").read_text(encoding="utf-8"))
+        self.assertIn(HOOK_NAME, hooks)
         for event in HOOK_EVENTS:
-            cmd = hooks[event][0]["hooks"][0]["command"]
+            cmd = hooks[HOOK_NAME][event][0]["command"]
             self.assertIn("hook", cmd)
             self.assertIn(str(launcher), cmd)
 
@@ -79,7 +92,7 @@ class TestInstall(unittest.TestCase):
     def test_install_creates_backups_and_is_idempotent(self):
         hooks_path = self.home / ".gemini/config/hooks.json"
         hooks_path.parent.mkdir(parents=True, exist_ok=True)
-        hooks_path.write_text(json.dumps({"Custom": []}), encoding="utf-8")
+        hooks_path.write_text(json.dumps({"Custom": {}}), encoding="utf-8")
 
         installer.install(self.home, repo_root=self.repo)
         installer.install(self.home, repo_root=self.repo)
@@ -87,8 +100,9 @@ class TestInstall(unittest.TestCase):
         self.assertTrue(hooks_path.with_suffix(".json.bak").exists())
         hooks = json.loads(hooks_path.read_text(encoding="utf-8"))
         self.assertIn("Custom", hooks)
+        self.assertIn(HOOK_NAME, hooks)
         for event in HOOK_EVENTS:
-            self.assertEqual(len(hooks[event][0]["hooks"]), 1)
+            self.assertEqual(len(hooks[HOOK_NAME][event]), 1)
 
     def test_install_refuses_to_clobber_invalid_json(self):
         hooks_path = self.home / ".gemini/config/hooks.json"
