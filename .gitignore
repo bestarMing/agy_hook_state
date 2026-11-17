@@ -4,3 +4,7 @@
 !docs/
 !docs/specs/
 !GLOSSARY.md
+
+# Python bytecode caches (runtime-generated, machine-specific — never commit)
+__pycache__/
+*.py[cod]
