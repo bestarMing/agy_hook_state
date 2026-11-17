@@ -16,13 +16,13 @@ def _base_dir() -> Path:
 def main() -> int:
     try:
         data = json.loads(sys.stdin.read())
-        conversation_id = data.get("conversation_id", "unknown")
+        conversation_id = data.get("conversation_id") or data.get("conversationId") or "unknown"
         root = storage.turn_dir(_base_dir(), conversation_id)
-        cw = data.get("context_window")
+        cw = data.get("context_window") or data.get("contextWindow")
         if cw:
             storage.write_token_snapshot(root, {
-                "total_output_tokens": cw.get("total_output_tokens", 0),
-                "total_input_tokens": cw.get("total_input_tokens", 0),
+                "total_output_tokens": cw.get("total_output_tokens", cw.get("totalOutputTokens", 0)),
+                "total_input_tokens": cw.get("total_input_tokens", cw.get("totalInputTokens", 0)),
             })
         sp = storage.summary_path(root)
         if sp.exists():

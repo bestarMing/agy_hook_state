@@ -49,6 +49,22 @@ class TestCore(unittest.TestCase):
         self.assertIn("turn#1", summary)
         self.assertIn("[full]", summary)
 
+    def test_first_turn_with_session_start_and_camelcase_fields(self):
+        storage.write_token_snapshot(self.root, {"total_output_tokens": 0, "total_input_tokens": 0})
+        core.handle_event(hook_event("SessionStart"), self.base, self.clock)
+        core.handle_event(hook_event("PreInvocation", invocationNum=0), self.base, self.clock)
+        self.clock.set(600)
+        core.handle_event(hook_event("PostInvocation", invocationNum=0), self.base, self.clock)
+        storage.write_token_snapshot(self.root, {"total_output_tokens": 300, "total_input_tokens": 1200})
+        self.clock.set(900)
+        rec = core.handle_event(
+            hook_event("Stop", continuationActive=False), self.base, self.clock
+        )
+        self.assertIsNotNone(rec)
+        self.assertEqual(rec["outputTokens"], 300)
+        self.assertEqual(rec["completeness"], "full")
+        self.assertEqual(rec["missing"], [])
+
     def test_partial_turn_when_tokens_missing(self):
         core.handle_event(hook_event("PreInvocation", invocationNum=0), self.base, self.clock)
         self.clock.set(1000)

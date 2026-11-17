@@ -10,9 +10,13 @@ CROSSCHECK_THRESHOLD_MS = 2000
 
 
 def is_terminal_stop(event: dict) -> bool:
+    name = event.get("event") or event.get("hookEventName")
+    continuation = event.get("continuationActive")
+    if continuation is None:
+        continuation = event.get("continuation_active", False)
     return (
-        event.get("event") == "Stop"
-        and event.get("continuation_active") is False
+        name == "Stop"
+        and continuation is False
         and event.get("decision") != "continue"
     )
 
@@ -175,5 +179,5 @@ def summary_line(record: TurnRecord, agg: dict) -> str:
     miss = f":{','.join(record['missing'])}" if record["missing"] else ""
     return (
         f"agy {record['conversationId']} turn#{record['turnIndex']}  "
-        f"{lat_s}  p50 {p50_s}  out {out} tok  {rate_s}  in {in_s}  [{comp}{miss}]"
+        f"{lat_s}  p50 {p50_s}  out {out_s} tok  {rate_s}  in {in_s}  [{comp}{miss}]"
     )

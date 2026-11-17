@@ -28,7 +28,7 @@ def parse_transcript_start_ms(transcript_path: str) -> int | None:
 
 
 def handle_event(event: dict, base_dir: Path, clock: Clock) -> TurnRecord | None:
-    conversation_id = event.get("conversationId", "unknown")
+    conversation_id = event.get("conversationId") or event.get("conversation_id") or "unknown"
     root = storage.turn_dir(base_dir, conversation_id)
 
     events = storage.read_events(root)
@@ -55,7 +55,14 @@ def handle_event(event: dict, base_dir: Path, clock: Clock) -> TurnRecord | None
         return None
 
     turn_events = [e for e in storage.read_events(root) if e.get("turnIndex") == turn_index]
-    baseline = turn_events[0].get("baselineTokens") if turn_events else None
+    baseline = next(
+        (
+            e.get("baselineTokens")
+            for e in turn_events
+            if e.get("event") == "PreInvocation" and "baselineTokens" in e
+        ),
+        None,
+    )
     end_tokens = storage.read_token_snapshot(root)
 
     transcript_ms = None

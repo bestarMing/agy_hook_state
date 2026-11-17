@@ -15,6 +15,9 @@ class TestMetrics(unittest.TestCase):
     def test_terminal_stop_detection(self):
         self.assertTrue(metrics.is_terminal_stop({"event": "Stop", "continuation_active": False}))
         self.assertFalse(metrics.is_terminal_stop({"event": "Stop", "continuation_active": True}))
+        self.assertTrue(metrics.is_terminal_stop({"event": "Stop", "continuationActive": False}))
+        self.assertFalse(metrics.is_terminal_stop({"event": "Stop", "continuationActive": True}))
+        self.assertTrue(metrics.is_terminal_stop({"hookEventName": "Stop", "continuationActive": False}))
         self.assertFalse(metrics.is_terminal_stop({"event": "PreInvocation"}))
         self.assertFalse(metrics.is_terminal_stop({
             "event": "Stop", "continuation_active": False, "decision": "continue",
@@ -22,6 +25,7 @@ class TestMetrics(unittest.TestCase):
         self.assertTrue(metrics.is_terminal_stop({
             "event": "Stop", "continuation_active": False, "decision": "end_turn",
         }))
+        self.assertTrue(metrics.is_terminal_stop({"event": "Stop"}))
 
     def test_pair_invocations_and_active_time(self):
         events = [
