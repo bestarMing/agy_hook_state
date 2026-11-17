@@ -41,12 +41,16 @@ class TestCore(unittest.TestCase):
         )
         self.assertIsNotNone(rec)
         self.assertEqual(rec["turnLatencyMs"], 1200)
+        self.assertEqual(rec["activeTimeMs"], 800)
+        self.assertEqual(rec["toolTimeMs"], 400)
+        self.assertEqual(rec["thinkingDurationMs"], "unknown")
         self.assertEqual(rec["turnIndex"], 1)
         records = storage.read_records(self.base, "conv-1")
         self.assertEqual(len(records), 1)
         self.assertEqual(records[0]["outputTokens"], 412)
         summary = storage.summary_path(self.root).read_text(encoding="utf-8")
         self.assertIn("turn#1", summary)
+        self.assertIn("1.20s (m:0.8s t:0.4s)", summary)
         self.assertIn("[full]", summary)
 
     def test_first_turn_with_session_start_and_camelcase_fields(self):

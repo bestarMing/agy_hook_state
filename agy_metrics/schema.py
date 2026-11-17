@@ -19,10 +19,12 @@ class TurnRecord(TypedDict):
     invocationCount: int
     invocationDurationsMs: list[int | None]
     activeTimeMs: int
+    toolTimeMs: int | None | str
     outputTokens: int | None | str
     inputTokens: int | None | str
     throughputTokensPerSec: float | None | str
     ttftMs: str
+    thinkingDurationMs: str
     completeness: Completeness
     missing: list[str]
     crossCheck: dict[str, Any]

@@ -58,6 +58,10 @@ def compute_turn(
         turn_latency = NULL
 
     durations, active = pair_invocations(turn_events)
+    if isinstance(turn_latency, int):
+        tool_time: int | None | str = max(0, turn_latency - active)
+    else:
+        tool_time = NULL
 
     if baseline_tokens and end_tokens:
         out_delta = end_tokens.get("total_output_tokens", 0) - baseline_tokens.get("total_output_tokens", 0)
@@ -121,10 +125,12 @@ def compute_turn(
         invocationCount=len(durations),
         invocationDurationsMs=durations,
         activeTimeMs=active,
+        toolTimeMs=tool_time,
         outputTokens=output_tokens,
         inputTokens=input_tokens,
         throughputTokensPerSec=throughput,
         ttftMs=UNKNOWN,
+        thinkingDurationMs=UNKNOWN,
         completeness=completeness,
         missing=missing,
         crossCheck=cross,
@@ -147,6 +153,7 @@ def _percentile(sorted_values: list[int], p: float) -> int:
 def aggregate(records: list[TurnRecord]) -> dict:
     latencies = sorted(r["turnLatencyMs"] for r in records if isinstance(r["turnLatencyMs"], int))
     acts = [r["activeTimeMs"] for r in records]
+    tools = [r["toolTimeMs"] for r in records if isinstance(r.get("toolTimeMs"), int)]
     outs = [r["outputTokens"] for r in records if isinstance(r["outputTokens"], int)]
     total_active = sum(acts)
     total_out = sum(outs)
@@ -155,6 +162,7 @@ def aggregate(records: list[TurnRecord]) -> dict:
             "p50Ms": _percentile(latencies, 50),
             "p95Ms": _percentile(latencies, 95),
             "sumMs": sum(latencies),
+            "totalToolMs": sum(tools),
         },
         "throughput": {
             "totalOutputTokens": total_out,
@@ -166,7 +174,14 @@ def aggregate(records: list[TurnRecord]) -> dict:
 
 def summary_line(record: TurnRecord, agg: dict) -> str:
     lat = record["turnLatencyMs"]
-    lat_s = f"{lat / 1000:.2f}s" if isinstance(lat, int) else "—"
+    act = record.get("activeTimeMs")
+    tool = record.get("toolTimeMs")
+    if isinstance(lat, int) and isinstance(act, int) and isinstance(tool, int):
+        lat_s = f"{lat / 1000:.2f}s (m:{act / 1000:.1f}s t:{tool / 1000:.1f}s)"
+    elif isinstance(lat, int):
+        lat_s = f"{lat / 1000:.2f}s"
+    else:
+        lat_s = "—"
     p50 = agg["turnLatency"]["p50Ms"]
     p50_s = f"{p50 / 1000:.2f}s" if isinstance(p50, int) else "—"
     out = record["outputTokens"]

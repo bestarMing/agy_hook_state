@@ -19,5 +19,11 @@ class TestFoundation(unittest.TestCase):
     def test_schema_version(self):
         self.assertEqual(SCHEMA_VERSION, 1)
 
+    def test_turn_record_schema_fields(self):
+        from agy_metrics.schema import TurnRecord
+        hints = TurnRecord.__annotations__
+        self.assertIn("toolTimeMs", hints)
+        self.assertIn("thinkingDurationMs", hints)
+
 if __name__ == "__main__":
     unittest.main()

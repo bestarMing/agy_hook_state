@@ -25,6 +25,18 @@ _Avoid_: response time
 **调用耗时 Invocation Duration**:
 单次调用从发出请求到收到完整响应的持续时间。
 
+**模型活跃时间 Active Time**:
+一个轮次中所有调用耗时的累计总和，代表模型处于请求与生成状态的时间。
+_Avoid_: model time、生成时间
+
+**工具执行耗时 Tool Execution Time**:
+一个轮次中执行外部工具与命令的累计耗时，等于轮次端到端延迟减去模型活跃时间。
+_Avoid_: tool duration、工具耗时
+
+**思维链耗时 Thinking Duration**:
+单次调用中模型生成内部思维链（Chain-of-Thought / Thinking）内容的物理持续时间。
+_Avoid_: 思考时间、CoT 耗时、reasoning time
+
 **首 token 延迟 Time to First Token (TTFT)**:
 从用户提问到该轮首个输出 token 出现的延迟，衡量响应的起始速度。
 

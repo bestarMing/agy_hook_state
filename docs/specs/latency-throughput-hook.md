@@ -65,17 +65,17 @@
 
 路径：`~/.gemini/antigravity-cli/hook-metrics/<conversationId>.jsonl`（每会话一文件，无需轮转）。字段：
 
-`schemaVersion, conversationId, turnIndex, timestamp, modelName, turnLatencyMs, invocationCount, invocationDurationsMs[], activeTimeMs, outputTokens, inputTokens, throughputTokensPerSec, ttftMs, completeness, missing[], crossCheck{}`
+`schemaVersion, conversationId, turnIndex, timestamp, modelName, turnLatencyMs, invocationCount, invocationDurationsMs[], activeTimeMs, toolTimeMs, outputTokens, inputTokens, throughputTokensPerSec, ttftMs, thinkingDurationMs, completeness, missing[], crossCheck{}`
 
 完整样例（三档：full / partial / empty）见 [`docs/prototypes/jsonl-schema-and-summary.md`](../prototypes/jsonl-schema-and-summary.md)（分支 `prototype/jsonl-schema`）。
 
 ### 5.2 一行终端摘要（终态 Stop hook 时打印）
 
 ```
-agy c-7f3a turn#2  7.24s  p50 5.21s  out 412 tok  85.5 tok/s  in 1.9k  [full]
+agy c-7f3a turn#2  7.24s (m:5.1s t:2.1s)  p50 5.21s  out 412 tok  85.5 tok/s  in 1.9k  [full]
 ```
 
-字段：conversationId 短名 · turnIndex · turnLatency · 会话 p50 · outputTokens · throughput · inputTokens · completeness（partial 时附 `missing`）。`ttftMs` 恒 unknown，不展示。
+字段：conversationId 短名 · turnIndex · turnLatency (m:模型活跃耗时 t:工具执行耗时) · 会话 p50 · outputTokens · throughput · inputTokens · completeness（partial 时附 `missing`）。`ttftMs` 与 `thinkingDurationMs` 恒 unknown，不展示。
 
 ## 6. 配置契约
 

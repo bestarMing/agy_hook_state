@@ -101,12 +101,12 @@ hook-metrics/
 └── <conversationId>.jsonl       # 归档：每轮一行 TurnRecord
 ```
 
-每轮归档记录（`TurnRecord`）字段：`schemaVersion`、`conversationId`、`turnIndex`、`timestamp`、`modelName`、`turnLatencyMs`、`invocationCount`、`invocationDurationsMs[]`、`activeTimeMs`、`outputTokens`、`inputTokens`、`throughputTokensPerSec`、`ttftMs`、`completeness`、`missing[]`、`crossCheck{}`。
+每轮归档记录（`TurnRecord`）字段：`schemaVersion`、`conversationId`、`turnIndex`、`timestamp`、`modelName`、`turnLatencyMs`、`invocationCount`、`invocationDurationsMs[]`、`activeTimeMs`、`toolTimeMs`、`outputTokens`、`inputTokens`、`throughputTokensPerSec`、`ttftMs`、`thinkingDurationMs`、`completeness`、`missing[]`、`crossCheck{}`。
 
 **三种哨兵，绝不混用**：
 
 - `null`：本应有但采集失败（如缺墙钟）
-- `"unknown"`：本架构永远算不出（如 `ttftMs`，恒为 `"unknown"`）
+- `"unknown"`：本架构永远算不出（如 `ttftMs`、`thinkingDurationMs`，恒为 `"unknown"`）
 - 数字：真实值
 
 `completeness` 取值 `full` / `partial` / `empty`；`missing[]` 列出缺失项名（如 `["tokens"]`）。会话崩溃导致缺终态 Stop 时，`turnLatencyMs` 为 `null`、`completeness:"empty"`，仍落一行以便对账。
@@ -114,12 +114,12 @@ hook-metrics/
 **摘要格式**（写在 `summary.txt`，由 statusline 显示）：
 
 ```
-agy <conversationId> turn#<n>  <延迟>s  p50 <ms>s  out <n> tok  <速率> tok/s  in <n>k  [completeness]
+agy <conversationId> turn#<n>  <延迟>s (m:<模型>s t:<工具>s)  p50 <ms>s  out <n> tok  <速率> tok/s  in <n>k  [completeness]
 ```
 
 会话级延迟用 p50/p95 聚合，吞吐用「总输出 token ÷ 总模型活跃时间」的比率之比（不是各轮速率的算术平均）。
 
-术语定义（Session / Turn / Invocation、Turn Latency、Invocation Duration、TTFT、Output Throughput、Input Token Count 及其 Avoid 词）见 [`GLOSSARY.md`](GLOSSARY.md)。
+术语定义（Session / Turn / Invocation、Turn Latency、Invocation Duration、Active Time、Tool Execution Time、Thinking Duration、TTFT、Output Throughput、Input Token Count 及其 Avoid 词）见 [`GLOSSARY.md`](GLOSSARY.md)。
 
 ## 运行测试
 
